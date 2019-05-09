@@ -60,34 +60,16 @@ type Draw = State -> SizedPicture
 -- Znaki na pola - UWAGA - domyślnie bez pudełek
 charToTile :: Char -> Tile
 charToTile c | c == '#'  = Wall
-             |
-  -- Różne konwencje gracza na podłodze
-               c == '@'  = Ground
-             |
-  -- Różne konwencje gracza na podłodze
-               c == 'p'  = Ground
-             |
-  -- Gracz na polu końcowym
-               c == '+'  = Storage
-             |
-  -- Różne konwencje pudełka (pudełko na podłodze)
-               c == '$'  = Ground
-             |
-  -- Różne konwencje pudełka (pudełko na podłodze)
-               c == 'b'  = Ground
-             |
-  -- Różne konwencje pudełka (pudełko na storage) NOWOŚĆ!
-               c == '*'  = Storage
+             | c == '@'  = Ground
+             | c == 'p'  = Ground
+             | c == '+'  = Storage
+             | c == '$'  = Ground
+             | c == 'b'  = Ground
+             | c == '*'  = Storage
              | c == '.'  = Storage
-             |
-  -- Różne koncepcje podłogi
-               c == ' '  = Ground
-             |
-  -- Różne koncepcje podłogi
-               c == '-'  = Ground
-             |
-  -- Pole, które na pewno będzie puste
-               c == '_'  = Blank
+             | c == ' '  = Ground
+             | c == '-'  = Ground
+             | c == '_'  = Blank
              | otherwise = Blank
 
 -- Sprawdzenie, czy dane pole reprezentuje pudełko (na jakimś polu)

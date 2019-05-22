@@ -98,22 +98,22 @@ isBox :: Char -> Bool
 isBox c = c == '$' || c == 'b' || c == '*'
 
 -- Znaki oznaczające gracza
-playerChars :: [Char]
+playerChars :: String
 playerChars = ['@', '+', 'p']
 
 -- Funkcja mówiąca nam, czy na danym polu stoi gracz
 isCharPlayer :: Char -> Bool
-isCharPlayer c = elem c playerChars
+isCharPlayer c = c `elem` playerChars
 
 -- Poruszenie współrzędnej do góry
 upCoord :: Coord -> Coord
-upCoord (C x y) = (C x (y + 1))
+upCoord (C x y) = C x (y + 1)
 
 -- Poruszenie współrzędnej w prawo
 rightCoord :: Coord -> Coord
-rightCoord (C x y) = (C (x + 1) y)
+rightCoord (C x y) = C (x + 1) y
 
-type Map = [[Char]]
+type Map = [String]
 
 -- Bardzo fajna funkcja pomocnicza
 foldTable :: (Coord -> a -> b -> b) -> b -> [[a]] -> b
@@ -128,7 +128,7 @@ foldTable modifyValue initialValue =
 -- Parser poziomów (stosuję odpowiednio foldl i foldr, żeby zachować kolejność)
 mazeParser :: (Map, LevelName) -> Maze
 mazeParser (mapPicture, lvlName) =
-  (Maze (plr mapPicture) (createMap mapPicture) (getBoxes mapPicture) lvlName)
+  Maze (plr mapPicture) (createMap mapPicture) (getBoxes mapPicture) lvlName
   where
     plr :: Map -> Coord
     plr table =
@@ -143,13 +143,12 @@ mazeParser (mapPicture, lvlName) =
       let tableToFunction :: Map -> (Coord -> Char)
           tableToFunction =
             foldTable
-              (\c el res ->
-                 (\x ->
-                    if x == c
-                      then el
-                      else res x))
-              (\_ -> '_')
-       in charToTile . (tableToFunction table)
+              (\c el res x ->
+                 if x == c
+                   then el
+                   else res x)
+              (const '_')
+       in charToTile . tableToFunction table
     getBoxes :: Map -> Boxes
     getBoxes =
       foldTable
@@ -178,7 +177,7 @@ nth l n =
     l
 
 allList :: (a -> Bool) -> [a] -> Bool
-allList isOk = foldr (\el acc -> acc && (isOk el)) True
+allList isOk = foldr (\el acc -> acc && isOk el) True
 
 --- Funkcje na grafach
 -- Pomocnicze typy dla grafów
@@ -193,12 +192,8 @@ dfs :: Eq a => Node a -> Neighbours a -> Visited a
 dfs initial neighbours =
   let helper v visited
         | visited v = visited
-        | otherwise =
-          foldr
-            (\u vis -> helper u vis)
-            (\u -> u == v || visited u)
-            (neighbours v)
-   in helper initial (\_ -> False)
+        | otherwise = foldr helper (\u -> u == v || visited u) (neighbours v)
+   in helper initial (const False)
 
 reachable :: Eq a => Node a -> Node a -> Neighbours a -> Bool
 reachable v initial neighbours = dfs initial neighbours v
@@ -237,16 +232,13 @@ someDim takeSome (Maze c mm _ _) =
         let helper v ans@(visited, visList)
               | visited v = ans
               | otherwise =
-                foldr
-                  (\u res -> helper u res)
-                  ((\u -> u == v || visited u), v : visList)
-                  (neigh v)
-         in snd (helper initial (\_ -> False, []))
+                foldr helper (\u -> u == v || visited u, v : visList) (neigh v)
+         in snd (helper initial (const False, []))
       allPossibleFields :: Boxes
       allPossibleFields = dfsList c neighbours
       minSome, maxSome :: Integer
-      minSome = foldr min (takeSome c) $ map takeSome allPossibleFields
-      maxSome = foldr max (takeSome c) $ map takeSome allPossibleFields
+      minSome = foldr (min . takeSome) (takeSome c) allPossibleFields
+      maxSome = foldr (max . takeSome) (takeSome c) allPossibleFields
    in [minSome .. maxSome]
 
 xDim :: Maze -> [Integer]
@@ -257,7 +249,7 @@ yDim = someDim (\(C _ y) -> y)
 
 -- Rysowanie Boolów
 pictureOfBools :: [Bool] -> SizedPicture
-pictureOfBools xs = (go 0 xs)
+pictureOfBools xs = go 0 xs
   where
     n = length xs
     k = findK 0 -- k is the integer square of n
@@ -290,7 +282,7 @@ isWinning (S _ _ b mm _ _ _ _ _) =
 levelState :: Mazes -> State -> LevelState
 levelState mazes s@(S _ _ _ _ _ _ n _ _) =
   if isWinning s
-    then if n == (listLength mazes)
+    then if n == listLength mazes
            then GameWon
            else LevelWon
     else Game
@@ -317,7 +309,7 @@ initialBoxes (Maze c mm b _) =
 -- dodawanie skrzyń na podanych pozycjach
 addBoxes :: Boxes -> MazeMap -> MazeMap
 addBoxes b mm c =
-  if elem c b
+  if c `elem` b
     then Box
     else mm c
 
@@ -387,7 +379,7 @@ informationStart = "Press Space to start"
 
 -- Wizualizacja progresu
 progress :: Mazes -> Integer -> SizedPicture
-progress mazes n = pictureOfBools $ map (\x -> x <= n) [1 .. (listLength mazes)]
+progress mazes n = pictureOfBools $ map (<= n) [1 .. (listLength mazes)]
 
 -- informacja o wygraniu gry
 -- mógłbym pisać też numer ukończonego poziomu, ale jest wymagane:
@@ -395,7 +387,7 @@ progress mazes n = pictureOfBools $ map (\x -> x <= n) [1 .. (listLength mazes)]
 nextLevel :: Mazes -> Integer -> Integer -> LevelName -> SizedPicture
 nextLevel mazes n nm ln =
   lettering
-    ("Level finished, number of moves: " ++ (show nm) ++ ", level name: " ++ ln) &
+    ("Level finished, number of moves: " ++ show nm ++ ", level name: " ++ ln) &
   translated 0 2 (lettering informationNext) &
   translated 0 4 (progress mazes n)
 
@@ -408,7 +400,7 @@ youWon mazes n nm ln =
   translated
     0
     2
-    (lettering ("Number of moves: " ++ (show nm) ++ ", last level: " ++ ln) &
+    (lettering ("Number of moves: " ++ show nm ++ ", last level: " ++ ln) &
      translated 0 2 (lettering informationEnd)) &
   translated 0 6 (progress mazes n)
 
@@ -424,7 +416,7 @@ pictureTheMazeInRange mm xs ys =
 
 -- rysowanie obrazka z danymi koordynatami
 atCoord :: Coord -> SizedPicture -> SizedPicture
-atCoord (C x y) pic = translated x y pic
+atCoord (C x y) = translated x y
 
 -- rysowanie pudeł
 pictureOfBoxes :: Boxes -> SizedPicture
@@ -496,13 +488,12 @@ handleEvent mazes e s =
 
 -- Przesuwanie pudełka z danej pozycji na inną
 moveBox :: Coord -> Coord -> Boxes -> Boxes
-moveBox from to b =
+moveBox from to =
   map
     (\c ->
        if c == from
          then to
          else c)
-    b
 
 -- sprawdzanie ściany i pudełka
 controlledAdjacentCoord :: Direction -> State -> State
@@ -510,21 +501,16 @@ controlledAdjacentCoord d s@(S c _ b mm xd yd n mn ln) =
   let helper :: Tile -> State
       helper Ground = ns
       helper Storage = ns
-      -- sprawdzanie pudełka
       helper Box =
         let helper2 :: Tile -> State
             helper2 Ground = nbs
             helper2 Storage = nbs
             helper2 _ = sd
          in helper2 (mazeWithBoxes nbc)
-              -- Nowy możliwy stan świata z przesuniętym pudełkiem (new box state)
         where
-          nbs = (S nc d nb mm xd yd n (mn + 1) ln)
-        -- Nowe możliwe położenia pudełek (new boxes)
+          nbs = S nc d nb mm xd yd n (mn + 1) ln
           nb = moveBox obc nbc b
-        -- Nowa możliwa pozycja pudełka (new box coord)
           nbc = adjacentCoord d obc
-        -- Stara pozycja pudełka (old box coord)
           obc = nc
       helper _ = sd
    in helper (mazeWithBoxes nc)
@@ -534,9 +520,9 @@ controlledAdjacentCoord d s@(S c _ b mm xd yd n mn ln) =
       if s0 /= s
         then s1
         else s0
-    s0 = (S c d b mm xd yd n mn ln)
-    s1 = (S c d b mm xd yd n (mn + 1) ln)
-    ns = (S nc d b mm xd yd n (mn + 1) ln)
+    s0 = S c d b mm xd yd n mn ln
+    s1 = S c d b mm xd yd n (mn + 1) ln
+    ns = S nc d b mm xd yd n (mn + 1) ln
     nc = adjacentCoord d c
 
 --- Funkcja świata i resetowany świat oraz ekran startowy
@@ -622,7 +608,7 @@ readMapsFrom levelsFolder =
    in do filesToRead <- listDirectory levelsFolder
          prevDir <- getCurrentDirectory
          setCurrentDirectory levelsFolder
-         maps <- sequence (map helperForMap filesToRead)
+         maps <- mapM helperForMap filesToRead
          setCurrentDirectory prevDir
          return maps
 
@@ -636,7 +622,7 @@ main = do
 type Color = Char
 
 -- Typ zdarzenia
-data Event =
+newtype Event =
   KeyPress String
 
 -- Typ ekranu

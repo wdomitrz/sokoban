@@ -177,7 +177,7 @@ adjacentCoord d c@(C x y) | d == R    = C (x + 1) y
 directions :: [Direction]
 directions = [U, D, R, L]
 
---- Obliczanie odpowiednych wymiarów dla danego poziomu
+--- Obliczanie odpowiednich wymiarów dla danego poziomu
 someDim :: (Coord -> Integer) -> Maze -> [Integer]
 someDim takeSome (Maze c mm _ _) =
   let
@@ -307,7 +307,7 @@ initialWorld n m = S (initialCoord m)
 
 
 
---- Funkcje rysujace
+--- Funkcje rysujące
 -- ryzowanie gracza
 player :: Direction -> SizedPicture
 player _ = colored '@'
@@ -379,7 +379,7 @@ youWon mazes n nm ln =
 drawMazeElement :: MazeMap -> Integer -> Integer -> SizedPicture
 drawMazeElement mm x y = translated x y $ drawTile $ mm (C x y)
 
--- rysowanie danego laburyntu na polach o danych współrzędnych xowych i yowych
+-- rysowanie danego labiryntu na polach o danych współrzędnych xowych i yowych
 pictureTheMazeInRange :: MazeMap -> [Integer] -> [Integer] -> SizedPicture
 pictureTheMazeInRange mm xs ys =
   pictures [ drawMazeElement mm x y | x <- xs, y <- ys ]
@@ -437,7 +437,7 @@ handlePlaying (KeyPress key) s | key == "w" = w' U
   where w' x = controlledAdjacentCoord x s
 handlePlaying _ s = s
 
--- resetowalne poziomy
+-- resetowane poziomy
 handleLevelReset :: Mazes -> Handler -> Handler
 handleLevelReset mazes _ (KeyPress key) (S _ _ _ _ _ _ n _ _) | key == "r" =
   initialWorld n (nth mazes (n - 1))
@@ -492,12 +492,12 @@ controlledAdjacentCoord d s@(S c _ b mm xd yd n mn ln) =
 
 
 
---- Funkcja świata i resetowalny świat oraz ekran startowy
+--- Funkcja świata i resetowany świat oraz ekran startowy
 -- świat gry na podstawie stanu początkowego, zmiany w czasie, zmiany po wydarzeniach i funkcji rysującej v3
 etap5 :: Mazes -> IO ()
 etap5 mazes = runInteraction $ Interaction
   (initialWorld 1 (nth mazes 0)) -- początkowy stan świata
-  (handleLevelReset mazes $ handleEvent mazes)   -- obsługa wydarzeń (wciskania klawiszy) (z resetowalnymi poziomami)
+  (handleLevelReset mazes $ handleEvent mazes)   -- obsługa wydarzeń (wciskania klawiszy) (z resetowanymi poziomami)
   (draw mazes)     -- rysowanie świata
 
 withUndo :: Eq a => Interaction a -> Interaction (WithUndo a)
@@ -586,7 +586,7 @@ main = do
 -- Typ koloru (coś, co może zostać pokazane na ekranie (na razie Char. Może kiedyś string))
 type Color = Char
 
--- Typ zdażenia
+-- Typ zdarzenia
 data Event = KeyPress String
 
 -- Typ ekranu
@@ -655,7 +655,7 @@ translated :: Integer -> Integer -> SizedPicture -> SizedPicture
 translated xt yt (range, picture) =
   (translateRange xt yt range, translatedPicture xt yt picture)
 
--- Typ obsługi zdażeń
+-- Typ obsługi zdarzeń
 type EventHandler world = Event -> world -> world
 
 -- Typ rysowania
@@ -663,11 +663,8 @@ type Drawer world = world -> SizedPicture
 
 -- Typ interaktywnego świata
 type Interactive world = world
-                          -- The initial state of the interaction.
                           -> EventHandler world
-                          -- The event handling function, which updates the state given a user interface event.
                           -> Drawer world
-                          -- The visualization function, which converts the state into a picture to display.
                           -> IO ()
 
 interactionOf :: Interactive world
@@ -708,7 +705,7 @@ lettering l =
   ) -- Można efektywniej, ale wystarczy
   where ll = listLength l
 
--- pokoloranie pola na jakiś kolor
+-- pokolorowanie pola na jakiś kolor
 colored :: Color -> SizedPicture
 colored c =
   ( (1, 1)
